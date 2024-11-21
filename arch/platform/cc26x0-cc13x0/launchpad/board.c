@@ -41,6 +41,7 @@
 #include "ti-lib.h"
 #include "board-peripherals.h"
 #include "rf-core/rf-switch.h"
+#include "board-i2c.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -53,6 +54,13 @@ wakeup_handler(void)
   ti_lib_prcm_power_domain_on(PRCM_DOMAIN_PERIPH);
   while(ti_lib_prcm_power_domain_status(PRCM_DOMAIN_PERIPH)
         != PRCM_DOMAIN_POWER_ON);
+}
+/*---------------------------------------------------------------------------*/
+static void
+shutdown_handler(uint8_t mode)
+{
+  /* Stop the I2C */
+  board_i2c_shutdown();
 }
 /*---------------------------------------------------------------------------*/
 /*
@@ -107,6 +115,8 @@ board_init()
   if(!int_disabled) {
     ti_lib_int_master_enable();
   }
+  /* I2C controller */
+  board_i2c_wakeup();
 }
 /*---------------------------------------------------------------------------*/
 /** @} */
