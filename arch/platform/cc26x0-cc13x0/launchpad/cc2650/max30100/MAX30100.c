@@ -9,6 +9,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "string.h"
+#include "log.h"
+#define LOG_MODULE "Test"
+#define LOG_LEVEL LOG_LEVEL_DBG
 
 //#include "myDriver.h"
 
@@ -36,38 +39,39 @@ static void notify_ready(void *not_used) {
   sensors_changed(&MAX30100);
 }
 /*---------------------------------------------------------------------------*/
-static void select_on_bus(void) {
+void select_on_bus(void) {
   /* Set up I2C */
   board_i2c_select(MAX30100_ADDRESS);
 }
 
 void setLEDs(pulseWidth pw, ledCurrent red, ledCurrent ir){
   uint8_t reg;
-  sensor_common_read_reg(MAX30100_SPO2_CONFIG, &reg, 1);
+  sensor_common_read_reg(MAX30100_SPO2_CONFIG, &reg, sizeof(reg));
+  LOG_DBG("%d",reg);
   reg = reg & 0xFC; // Set LED_PW to 00
   reg = reg | pw;
-  sensor_common_write_reg(MAX30100_SPO2_CONFIG, &reg, 1);     // Mask LED_PW
+  sensor_common_write_reg(MAX30100_SPO2_CONFIG, &reg, sizeof(reg));     // Mask LED_PW
   reg = (red<<4) | ir;
-  sensor_common_write_reg(MAX30100_LED_CONFIG, &reg, 1); // write LED configs
+  sensor_common_write_reg(MAX30100_LED_CONFIG, &reg, sizeof(reg)); // write LED configs
 }
 
 void setSPO2(sampleRate sr){
   uint8_t reg;
-  sensor_common_read_reg(MAX30100_SPO2_CONFIG, &reg, 1);
+  sensor_common_read_reg(MAX30100_SPO2_CONFIG, &reg, sizeof(reg));
   reg = reg & 0xE3; // Set SPO2_SR to 000
   reg = reg | (sr<<2);
-  sensor_common_write_reg(MAX30100_SPO2_CONFIG, &reg, 1); // Mask SPO2_SR
-  sensor_common_read_reg(MAX30100_MODE_CONFIG, &reg, 1);
+  sensor_common_write_reg(MAX30100_SPO2_CONFIG, &reg, sizeof(reg)); // Mask SPO2_SR
+  sensor_common_read_reg(MAX30100_MODE_CONFIG, &reg, sizeof(reg));
   reg = reg & 0xf8; // Set Mode to 000
   reg = reg | 0x03;
-  sensor_common_write_reg(MAX30100_SPO2_CONFIG, &reg, 1); // Mask MODE
+  sensor_common_write_reg(MAX30100_SPO2_CONFIG, &reg, sizeof(reg)); // Mask MODE
 }
 
 int getNumSamp(void){
     uint8_t wrPtr;
     uint8_t rdPtr;
-    sensor_common_read_reg(MAX30100_FIFO_WR_PTR, &wrPtr, 1);
-    sensor_common_read_reg(MAX30100_FIFO_RD_PTR, &rdPtr, 1);
+    sensor_common_read_reg(MAX30100_FIFO_WR_PTR, &wrPtr, sizeof(wrPtr));
+    sensor_common_read_reg(MAX30100_FIFO_RD_PTR, &rdPtr, sizeof(rdPtr));
     return (abs( 16 + wrPtr - rdPtr ) % 16);
 }
 
@@ -75,79 +79,79 @@ void setInterrupt(interruptSource intsrc)
 {
   uint8_t reg;
   reg = (intsrc + 1) << 4;
-  sensor_common_write_reg(MAX30100_INT_ENABLE, &reg, 1);
-  sensor_common_read_reg(MAX30100_INT_STATUS, &reg, 1);
+  sensor_common_write_reg(MAX30100_INT_ENABLE, &reg, sizeof(reg));
+  sensor_common_read_reg(MAX30100_INT_STATUS, &reg, sizeof(reg));
 }
 
 void setHighresModeEnabled(int enabled)
 {
     uint8_t previous;
-    sensor_common_read_reg(MAX30100_SPO2_CONFIG, &previous, 1);
+    sensor_common_read_reg(MAX30100_SPO2_CONFIG, &previous, sizeof(previous));
     if (enabled == 1)
     {
       previous = previous | MAX30100_SPC_SPO2_HI_RES_EN;
-      sensor_common_write_reg(MAX30100_SPO2_CONFIG, &previous, 1);
+      sensor_common_write_reg(MAX30100_SPO2_CONFIG, &previous, sizeof(previous));
     }
     else
     {
       previous = previous & ~MAX30100_SPC_SPO2_HI_RES_EN;
-      sensor_common_write_reg(MAX30100_SPO2_CONFIG, &previous, 1);
+      sensor_common_write_reg(MAX30100_SPO2_CONFIG, &previous, sizeof(previous));
     }
 }
 
 void readSensor(hrData_t *data){
   uint8_t temp[4] = {0};  // Temporary buffer for read values
-  sensor_common_read_reg(MAX30100_FIFO_DATA, temp, 4);  // Read four times from the FIFO
+  sensor_common_read_reg(MAX30100_FIFO_DATA, temp, sizeof(temp));  // Read four times from the FIFO
   data->IR = (temp[0]<<8) | temp[1];    // Combine values to get the actual number
   data->RED = (temp[2]<<8) | temp[3];   // Combine values to get the actual number
 }
 
 void shutdown(void){
   uint8_t reg;
-  sensor_common_read_reg(MAX30100_MODE_CONFIG, &reg, 1);  // Get the current register
+  sensor_common_read_reg(MAX30100_MODE_CONFIG, &reg, sizeof(reg));  // Get the current register
   reg = reg | 0x80;
-  sensor_common_write_reg(MAX30100_MODE_CONFIG, &reg, 1);   // mask the SHDN bit
+  sensor_common_write_reg(MAX30100_MODE_CONFIG, &reg, sizeof(reg));   // mask the SHDN bit
   board_i2c_shutdown();
 }
 
 void reset(void){
   uint8_t reg;
-  sensor_common_read_reg(MAX30100_MODE_CONFIG, &reg, 1);  // Get the current register
+  sensor_common_read_reg(MAX30100_MODE_CONFIG, &reg, sizeof(reg));  // Get the current register
   reg = reg | 0x40;
-  sensor_common_write_reg(MAX30100_MODE_CONFIG, &reg, 1);   // mask the RESET bit
+  sensor_common_write_reg(MAX30100_MODE_CONFIG, &reg, sizeof(reg));   // mask the RESET bit
 }
 
 void startup(void){
   board_i2c_wakeup();
   uint8_t reg;
-  sensor_common_read_reg(MAX30100_MODE_CONFIG, &reg, 1);  // Get the current register
+  sensor_common_read_reg(MAX30100_MODE_CONFIG, &reg, sizeof(reg));  // Get the current register
   reg = reg & 0x7F;
-  sensor_common_write_reg( MAX30100_MODE_CONFIG, &reg, 1);   // mask the SHDN bit
+  sensor_common_write_reg( MAX30100_MODE_CONFIG, &reg, sizeof(reg));   // mask the SHDN bit
 }
 uint8_t getLostSample(void){
   uint8_t buffer;
-  sensor_common_read_reg(MAX30100_OVRFLOW_CTR, &buffer, 1);
+  sensor_common_read_reg(MAX30100_OVRFLOW_CTR, &buffer, sizeof(buffer));
   return buffer;
 }
 uint8_t getRevID(void){
   uint8_t buffer;
-  sensor_common_read_reg(MAX30100_REV_ID, &buffer, 1);
+  sensor_common_read_reg(MAX30100_REV_ID, &buffer, sizeof(buffer));
   return buffer;
 }
 
 uint8_t getPartID(void){
   uint8_t buffer;
-  sensor_common_read_reg(MAX30100_PART_ID, &buffer, 1);
+  sensor_common_read_reg(MAX30100_PART_ID, &buffer, sizeof(buffer));
   return buffer;
 }
 void begin(pulseWidth pw, ledCurrent ir, sampleRate sr){
   uint8_t buffer;
   buffer = 0x02;
-  sensor_common_write_reg(MAX30100_MODE_CONFIG, &buffer, 1); // Heart rate only
+  sensor_common_write_reg(MAX30100_MODE_CONFIG, &buffer, sizeof(buffer)); // Heart rate only
   buffer = ir;
-  sensor_common_write_reg(MAX30100_LED_CONFIG, &buffer, 1);
+  sensor_common_write_reg(MAX30100_LED_CONFIG, &buffer, sizeof(buffer));
   buffer = (sr<<2)|pw;
-  sensor_common_write_reg(MAX30100_SPO2_CONFIG, &buffer, 1);
+  sensor_common_write_reg(MAX30100_SPO2_CONFIG, &buffer, sizeof(buffer));
 }
 
 long meanDiff(uint16_t M) {

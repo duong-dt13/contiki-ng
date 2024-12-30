@@ -37,10 +37,16 @@
 #include "net/ipv6/uip-debug.h"
 #include <lib/assert.h>
 #include "simple-udp.h"
-#include "max30100.h"
+#include "MAX30100.h"
+#include "board-i2c.h"
 #include <stdio.h>
 #include <string.h>
 #include <uiplib.h>
+
+#include "log.h"
+#define LOG_MODULE "Test"
+#define LOG_LEVEL LOG_LEVEL_DBG
+
 #define UDP_PORT 1234
 
 #define SEND_INTERVAL		(60 * CLOCK_SECOND)
@@ -141,6 +147,7 @@ PROCESS_THREAD(readMax30100, ev, data)
 {
   static struct etimer timer;
   PROCESS_BEGIN();
+  board_i2c_select(MAX30100_ADDRESS);
   reset();
   setSPO2(sr100);
   setHighresModeEnabled(1);

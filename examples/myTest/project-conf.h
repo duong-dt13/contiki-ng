@@ -50,4 +50,5 @@
 #define UIP_CONF_TCP 1
 #endif
 
+#define TI_I2C_CONF_ENABLE 1
 #endif /* PROJECT_CONF_H_ */

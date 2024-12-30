@@ -38,29 +38,27 @@
  */
 
 #include "contiki.h"
-
+#include <MAX30100.h>
 #include <stdio.h> /* For printf() */
+#include "sys/log.h"
+#define LOG_MODULE "MAX30100 Driver"
+#define LOG_LEVEL LOG_LEVEL_DBG
+//hrData_t rawData;
 /*---------------------------------------------------------------------------*/
-PROCESS(hello_world_process, "Hello world process");
-AUTOSTART_PROCESSES(&hello_world_process);
+PROCESS(readMax30100, "Hello world process");
+AUTOSTART_PROCESSES(&readMax30100);
 /*---------------------------------------------------------------------------*/
-PROCESS_THREAD(hello_world_process, ev, data)
+PROCESS_THREAD(readMax30100, ev, data)
 {
   static struct etimer timer;
-
   PROCESS_BEGIN();
-
-  /* Setup a periodic timer that expires after 10 seconds. */
-  etimer_set(&timer, CLOCK_SECOND * 10);
-
+  etimer_set(&timer, CLOCK_SECOND);
+  sensor_init();
   while(1) {
-    printf("Hello, world\n");
-
-    /* Wait for the periodic timer to expire and then restart the timer. */
+    printf("hlw\n");
     PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
     etimer_reset(&timer);
   }
-
   PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
